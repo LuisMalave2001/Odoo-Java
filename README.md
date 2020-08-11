@@ -1,3 +1,5 @@
+Most of this work isn't mine, this project was forked from: https://github.com/ArnoSoontjens/Odoo-Java
+
 # Odoo-Java
 This library uses XML-RPC to connect to the Odoo ERP system, using Java. This library is still under construction. 
 Depends on the <a href="https://github.com/gturri/aXMLRPC">aXMLRPC</a> library by Tim Roes. 
