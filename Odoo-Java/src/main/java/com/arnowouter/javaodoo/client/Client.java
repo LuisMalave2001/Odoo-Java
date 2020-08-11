@@ -112,7 +112,11 @@ public class Client {
     public int write(Object[] params) throws XMLRPCException{
         return (int) objectClient.call(ConnectorDefaults.EXECUTE, params);
     }
-    
+
+    public Object executeModelMethod(Object[] params) throws  XMLRPCException{
+        return objectClient.call(ConnectorDefaults.EXECUTE, params);
+    }
+
     public Map<String,String> callToStartTestDatabase(URL url) throws XMLRPCException {
         XMLRPCClient client = new XMLRPCClient(url);
         Map<String, String> info = (Map<String,String>) client.call("start");
