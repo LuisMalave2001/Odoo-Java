@@ -29,7 +29,11 @@ public class ConnectorDefaults {
     public final static String ACTION_SEARCH = "search";
     public final static String ACTION_READ = "read";
     public final static String ACTION_SEARCH_READ = "search_read";
+
     public final static String ACTION_CREATE_RECORD = "create";
+    public final static String ACTION_UPDATE_RECORD = "write";
+    public final static String ACTION_DELETE_RECORD = "unlink";
+
     public final static String ACTION_UPDATE_LOCATION = "geo_localize";
     
     public final static String PROTOCOL_HTTP = "http";
