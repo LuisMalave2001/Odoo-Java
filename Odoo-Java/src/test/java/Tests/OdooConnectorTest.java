@@ -128,7 +128,7 @@ public class OdooConnectorTest {
     
     @Test
     public void shouldRead() throws ConnectorException {
-        int[] ids = {1,2,4,5,484,4484,1454,484,4541,5564};
+        int[] ids = {2,3,4,6,7,19,20,22,39,40,41,42};
 
         Object[] result = odooConnector.read("sale.order",ids);
         for(Object res : result){
