@@ -14,20 +14,19 @@ import de.timroes.axmlrpc.XMLRPCException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import static java.util.Arrays.asList;
-import java.util.HashMap;
-import java.util.Map;
+import static java.util.Collections.singletonList;
+import java.util.*;
+
 import com.arnowouter.javaodoo.util.Query;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import com.arnowouter.javaodoo.IConnector;
+import com.arnowouter.javaodoo.IOdooConnector;
 /**
  *
  * @author  Arno Soontjens
- * @see     https://github.com/ArnoSoontjens
+ * @author  Luis Mora
  */
 
 
-public class Connector implements IConnector {
+public class OdooConnector implements IOdooConnector {
     
     private Client odooClient;
     
@@ -38,23 +37,23 @@ public class Connector implements IConnector {
     
     private int odooUserId;
 
-    public Connector() {
+    public OdooConnector() {
     }
     
-    public Connector(String hostName) throws MalformedURLException{
+    public OdooConnector(String hostName) throws MalformedURLException{
         this(hostName, false);
     }
     
-    public Connector(String hostName, boolean ignoreInvalidSSL) throws MalformedURLException {
+    public OdooConnector(String hostName, boolean ignoreInvalidSSL) throws MalformedURLException {
         URL newURL = new URL(hostName);
         odooClient = new Client(newURL,ignoreInvalidSSL);
     }
     
-    public Connector(String protocol, String hostName, int connectionPort) throws ConnectorException {
+    public OdooConnector(String protocol, String hostName, int connectionPort) throws ConnectorException {
         this(protocol,hostName,connectionPort,false);
     }
     
-    public Connector(String protocol, String hostName, int connectionPort, boolean ignoreInvalidSSL) 
+    public OdooConnector(String protocol, String hostName, int connectionPort, boolean ignoreInvalidSSL)
             throws ConnectorException 
     {
         this.protocol = protocol;
@@ -68,21 +67,21 @@ public class Connector implements IConnector {
         }
     }
     
-    public Connector(String hostName,DatabaseParams dbParams) throws MalformedURLException {
+    public OdooConnector(String hostName, DatabaseParams dbParams) throws MalformedURLException {
         this(hostName,dbParams,false);
     }
     
-    public Connector(String hostName,DatabaseParams dbParams, boolean ignoreInvalidSSL) throws MalformedURLException {
+    public OdooConnector(String hostName, DatabaseParams dbParams, boolean ignoreInvalidSSL) throws MalformedURLException {
         URL newURL = new URL(hostName);
         this.dbParams = dbParams;
         odooClient = new Client(newURL, ignoreInvalidSSL);
     }
     
-    public Connector(String protocol, String hostName, int connectionPort, DatabaseParams dbParams) throws ConnectorException {
+    public OdooConnector(String protocol, String hostName, int connectionPort, DatabaseParams dbParams) throws ConnectorException {
         this(protocol,hostName,connectionPort,false);
     }
     
-    public Connector(String protocol, String hostName, int connectionPort, DatabaseParams dbParams, boolean ignoreInvalidSSL) 
+    public OdooConnector(String protocol, String hostName, int connectionPort, DatabaseParams dbParams, boolean ignoreInvalidSSL)
             throws ConnectorException 
     {
         this.protocol = protocol;
@@ -93,7 +92,7 @@ public class Connector implements IConnector {
         createClient(ignoreInvalidSSL);
     }
   
-    public Connector(String protocol, String hostName, int connectionPort, String databaseName, String databaseLogin, String databasePassword, boolean ignoreInvalidSSL) 
+    public OdooConnector(String protocol, String hostName, int connectionPort, String databaseName, String databaseLogin, String databasePassword, boolean ignoreInvalidSSL)
             throws ConnectorException 
     {
         this.protocol = protocol;
@@ -164,25 +163,18 @@ public class Connector implements IConnector {
             throw new ConnectorException(ex.getMessage(), ex);
         }
     }
-    
-    
+
+
     @Override
-    public int createRecord(String model, HashMap<String, String> dataToWrite) throws ConnectorException {
-        if(!isAuthenticated()) throw new ConnectorException(ExceptionMessages.EX_MSG_NOT_AUTHENTENTICATED);
-        try {
-            Object[] params = {
-                dbParams.getDatabaseName(),
-                odooUserId,
-                dbParams.getDatabasePassword(),
-                model,
-                ConnectorDefaults.ACTION_CREATE_RECORD,
-                asList(dataToWrite)
-            };
-            
-            return (int) odooClient.write(params);
-        } catch (XMLRPCException ex) {
-            throw new ConnectorException(ex.getMessage(), ex);
-        }
+    public Integer[] createRecords(String model, List<HashMap<String, Object>> listOfNewRecordValues) throws ConnectorException {
+        Object[] recordIds = (Object[]) this.executeModelMethod("account.move", "create", listOfNewRecordValues.toArray());
+        Integer[] recordIdsList = Arrays.asList(recordIds).toArray(new Integer[0]);
+        return recordIdsList;
+    }
+
+    @Override
+    public Integer[] createRecord(String model, HashMap<String, Object> newRecordValues) throws ConnectorException {
+        return this.createRecords(model, new ArrayList<>(singletonList(newRecordValues)));
     }
     
     @Override
@@ -263,33 +255,37 @@ public class Connector implements IConnector {
     
     @Override
     public Object[] searchAndRead(String model, Object[] query, Object[] requestedFields) throws ConnectorException {
-        if(!isAuthenticated()) throw new ConnectorException(ExceptionMessages.EX_MSG_NOT_AUTHENTENTICATED);
-        try {  
-            Object[] params = new Object[]{
-                dbParams.getDatabaseName(),
-                odooUserId,
-                dbParams.getDatabasePassword(),
-                model,
-                ConnectorDefaults.ACTION_SEARCH_READ,
-                asList(asList(query)),
-                new HashMap() {{
-                    put(ConnectorDefaults.ODOO_FIELDS, asList(requestedFields));
-                }}
-            };
-            return (Object[]) odooClient.searchAndRead(params);
-        } catch (XMLRPCException ex) {
-            throw new ConnectorException(ex.getMessage(), ex);
-        }
+
+        Map<String, Object> requestedFieldMap = new HashMap<>();
+        requestedFieldMap.put(ConnectorDefaults.ODOO_FIELDS, asList(requestedFields));
+        return (Object[]) this.executeModelMethod(model, ConnectorDefaults.ACTION_SEARCH_READ, query, requestedFieldMap);
+
+//        if(!isAuthenticated()) throw new ConnectorException(ExceptionMessages.EX_MSG_NOT_AUTHENTENTICATED);
+//        try {
+//            Object[] params = new Object[]{
+//                dbParams.getDatabaseName(),
+//                odooUserId,
+//                dbParams.getDatabasePassword(),
+//                model,
+//                ,
+//                asList(asList(query)),
+//
+//            };
+//            return (Object[]) odooClient.searchAndRead(params);
+//        } catch (XMLRPCException ex) {
+//            throw new ConnectorException(ex.getMessage(), ex);
+//        }
     }
 
     @Override
-    public int updateRecord(String model, HashMap<String, String> dataToUpdate) throws ConnectorException {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    public boolean updateRecords(String model, Integer[] recordIds, HashMap<String, Object> dataToUpdate) throws ConnectorException {
+        List<HashMap<String, Object>> dataToUpdateAsList = new ArrayList<>(singletonList(dataToUpdate));
+        return (boolean) this.executeMethod(model, ConnectorDefaults.ACTION_UPDATE_RECORD, recordIds, dataToUpdateAsList.toArray());
     }
 
     @Override
-    public void deleteRecords(String model, Object[] idsToBeDeleted) throws ConnectorException {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    public boolean deleteRecords(String model, Integer[] idsToBeDeleted) throws ConnectorException {
+        return (boolean) this.executeMethod(model, ConnectorDefaults.ACTION_DELETE_RECORD, idsToBeDeleted);
     }
     
     private boolean isAuthenticated() {
@@ -309,6 +305,106 @@ public class Connector implements IConnector {
     public void setConnectionPort(int connectionPort) {this.connectionPort = connectionPort;}
     @Override
     public void setDbParams(DatabaseParams dbParams) {this.dbParams = dbParams;}
+
+    @Override
+    public Object executeModelMethod(String model, String method, Object[] arguments, Map<String, Object> keywordArguments) throws ConnectorException {
+
+        if (model == null) {throw new NullPointerException("Model cannot be null");}
+        if (method == null) {throw new NullPointerException("Method cannot be null");}
+        if (arguments == null) {throw new NullPointerException("Arguments cannot be null");}
+
+        if(!isAuthenticated()) throw new ConnectorException(ExceptionMessages.EX_MSG_NOT_AUTHENTENTICATED);
+        try {
+            ArrayList<Object> paramList = this.prepareArgsList(model, method);
+
+            // Arguments
+            paramList.add(singletonList(asList(arguments)));
+
+            // keywordArguments
+            if (keywordArguments != null && !keywordArguments.isEmpty()) {
+                paramList.add(keywordArguments);
+            }
+
+            Object[] paramsArray = paramList.toArray();
+
+            return odooClient.executeModelMethod(paramsArray);
+        } catch (XMLRPCException ex) {
+            throw new ConnectorException(ex.getMessage(), ex);
+        }
+    }
+
+    @Override
+    public Object executeModelMethod(String model, String method, Object[] arguments) throws ConnectorException {
+        return this.executeModelMethod(model, method, arguments, null);
+    }
+
+    @Override
+    public Object executeModelMethod(String model, String method) throws ConnectorException {
+        return this.executeModelMethod(model, method, new Object[0]);
+    }
+
+    @Override
+    public Object executeMethod(String model, String method, Integer[] recordIds, Object[] arguments, Map<String, Object> keywordArguments) throws ConnectorException {
+
+        if (model == null) {throw new NullPointerException("Model cannot be null");}
+        if (method == null) {throw new NullPointerException("Method cannot be null");}
+        if (recordIds == null) {throw new NullPointerException("RecordIds cannot be null");}
+        if (arguments == null) {throw new NullPointerException("Arguments cannot be null");}
+
+        if(!isAuthenticated()) throw new ConnectorException(ExceptionMessages.EX_MSG_NOT_AUTHENTENTICATED);
+        try {
+            ArrayList<Object> paramList = this.prepareArgsList(model, method);
+
+            ArrayList<Object> argumentArrayList = new ArrayList<>();
+
+            argumentArrayList.add(asList(recordIds));
+
+            // Arguments
+            if (arguments.length > 0) {
+                argumentArrayList.addAll(asList(arguments));
+            }
+
+            // keywordArguments
+            if (keywordArguments != null && !keywordArguments.isEmpty()) {
+                paramList.add(keywordArguments);
+            }
+
+            paramList.add(argumentArrayList);
+            Object[] paramsArray = paramList.toArray();
+
+            return odooClient.executeModelMethod(paramsArray);
+        } catch (XMLRPCException ex) {
+
+            if (model.equals("account.move") && ex.getMessage().contains("cannot marshal None unless allow_none is enabled")){
+                return null;
+            }
+
+            throw new ConnectorException(ex.getMessage(), ex);
+        }
+    }
+
+    @Override
+    public Object executeMethod(String model, String method, Integer[] recordIds, Object[] arguments) throws ConnectorException {
+        return this.executeMethod(model, method, recordIds, arguments, null);
+    }
+
+    @Override
+    public Object executeMethod(String model, String method, Integer[] recordIds) throws ConnectorException {
+        return this.executeMethod(model, method, recordIds, new Object[0], null);
+    }
+
+    private ArrayList<Object> prepareArgsList(String model, String method){
+        ArrayList<Object> paramList = new ArrayList<>();
+
+        paramList.add(dbParams.getDatabaseName());
+        paramList.add(odooUserId);
+        paramList.add(dbParams.getDatabasePassword());
+        paramList.add(model);
+        paramList.add(method);
+
+        return paramList;
+    }
+
     public void setOdooUserId(int odooUserId) {this.odooUserId = odooUserId;}
 
     public String getProtocol() {return protocol;}

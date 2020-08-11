@@ -5,12 +5,13 @@
  */
 package Tests;
 
-import com.arnowouter.javaodoo.client.Connector;
+import com.arnowouter.javaodoo.client.OdooConnector;
 import com.arnowouter.javaodoo.exceptions.ConnectorException;
 import com.arnowouter.javaodoo.util.DatabaseParams;
 import com.arnowouter.javaodoo.util.VersionInfo;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.HashMap;
 import java.util.Map;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -23,40 +24,40 @@ import com.arnowouter.javaodoo.exceptions.QueryException;
 import com.arnowouter.javaodoo.util.Query;
 import com.arnowouter.javaodoo.util.QueryBuilder;
 import static java.util.Arrays.asList;
-import com.arnowouter.javaodoo.IConnector;
+import com.arnowouter.javaodoo.IOdooConnector;
 
 /**
  *
  * @author Arno
  */
 public class OdooConnectorTest {
-    static IConnector testDBConnector;
-    static IConnector odooConnector;
+    static IOdooConnector testDBConnector;
+    static IOdooConnector odooConnector;
     static DatabaseParams dbParams;
     static int userID;
     static String odooHostName, databaseLogin, databaseName, databasePassword;
     
     @BeforeClass
     public static void setUpClass() throws MalformedURLException, ConnectorException {
-        testDBConnector = new Connector();
+        testDBConnector = new OdooConnector();
         String hostName = "demo.odoo.com";
         String protocolHTTP = "http";
 
         URL url = new URL(protocolHTTP, hostName,80,"/start");
-        Map<String, String> info = setUpNewTestDatabase(url); 
-        
+        Map<String, String> info = setUpNewTestDatabase(url);
+
         odooHostName = info.get("host");
         databaseLogin = info.get("user");
         databaseName = info.get("database");
         databasePassword = info.get("password");
-        
+
         System.out.println("URL: " + odooHostName);
         System.out.println("Database: " + databaseName);
         System.out.println("User: " + databaseLogin);
         System.out.println("Password: " + databasePassword);
 
         dbParams = new DatabaseParams(databaseName, databaseLogin, databasePassword);
-        odooConnector = new Connector(odooHostName, false);
+        odooConnector = new OdooConnector(odooHostName, false);
         odooConnector.setDbParams(dbParams);
 
         System.out.println(odooConnector.getVersion());
@@ -204,4 +205,97 @@ public class OdooConnectorTest {
         assertNotNull(result);
         assertTrue(result.length == 1);
     }
+
+    @Test
+    public void shouldReturnInboundTypes() throws ConnectorException {
+        Object[] inboundTypes = (Object[]) odooConnector.executeModelMethod("account.move", "get_inbound_types");
+        assertNotNull(inboundTypes);
+        assertTrue(inboundTypes.length >= 1);
+    }
+
+    @Test
+    public void testReadAndSearch() throws ConnectorException {
+        QueryBuilder builder = new QueryBuilder();
+        Query query = builder.searchField("id").forValueEqualTo("10").build();
+
+        Object[] requestedFields = {
+            "id",
+            "name"
+        };
+
+        Object[] result = odooConnector.searchAndRead("sale.order", query, requestedFields);
+
+        assertNotNull(result);
+        assertTrue(result.length >= 1);
+    }
+
+    @Test
+    public void testIdExecuteMethod() throws ConnectorException {
+        Integer[] recordIds = {33, 27};
+
+        Object[] result = (Object[]) odooConnector.executeMethod("res.partner", "name_get", recordIds);
+
+        assertNotNull(result);
+        assertTrue(result.length >= 1);
+    }
+
+    @Test
+    public void createAndPostInvoice() throws ConnectorException {
+
+        HashMap<String, Object> arguments =  new HashMap<String, Object>(){{
+            put("partner_id", 33);
+            put("type", "out_invoice");
+            put("invoice_line_ids", asList(asList(0, 0, new HashMap<String, Object>(){{
+                put("product_id", 21);
+                put("price_unit", 200);
+                put("quantity", 1);
+            }})));
+        }};
+
+        Integer[] moveIds = odooConnector.createRecord("account.move", arguments);
+        assertNotNull(moveIds);
+        assertTrue(moveIds.length >= 1);
+
+        odooConnector.executeMethod("account.move", "post", moveIds);
+    }
+
+
+    @Test
+    public void shouldReturnUpdatedName() throws ConnectorException {
+        Integer[] recordIds = {33};
+
+        Object[] result = (Object[]) odooConnector.executeMethod("res.partner", "name_get", recordIds);
+        String originalName = (String) ((Object[]) result[0])[1];
+
+        assertNotNull(result);
+        HashMap<String, Object> fieldsToWrite = new HashMap<String, Object>(){{
+            put("name", "dog");
+        }};
+
+        boolean successUpdate = odooConnector.updateRecords("res.partner", recordIds, fieldsToWrite);
+        assertTrue(successUpdate);
+
+        Object[] result2 = (Object[]) odooConnector.executeMethod("res.partner", "name_get", recordIds);
+        String newName = (String) ((Object[]) result2[0])[1];;
+
+        assertNotNull(result2);
+        assertNotEquals(newName, originalName);
+    }
+
+    @Test
+    public void shouldTheRecordBeDeleted() throws ConnectorException {
+        HashMap<String, Object> arguments =  new HashMap<String, Object>(){{
+        put("partner_id", 33);
+        put("type", "out_invoice");
+        put("invoice_line_ids", asList(asList(0, 0, new HashMap<String, Object>(){{
+            put("product_id", 21);
+            put("price_unit", 200);
+            put("quantity", 1);
+        }})));
+    }};
+
+        Integer[] moveIds = odooConnector.createRecord("account.move", arguments);
+        boolean successDelete = odooConnector.deleteRecords("account.move", moveIds);
+    }
+
 }
