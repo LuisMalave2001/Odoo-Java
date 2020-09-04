@@ -16,7 +16,7 @@ public class Query {
     public static final String EQUALS = "=";
     public static final String BIGGER_THAN = ">";
     public static final String SMALLER_THAN = "<";
-    
+
     private Object[] query;
     private String operator;
     private String field;
