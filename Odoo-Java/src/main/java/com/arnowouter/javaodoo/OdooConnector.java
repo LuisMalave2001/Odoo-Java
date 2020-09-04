@@ -3,14 +3,18 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package com.arnowouter.javaodoo.client;
+package com.arnowouter.javaodoo;
 
+import com.arnowouter.javaodoo.client.Client;
 import com.arnowouter.javaodoo.defaults.ConnectorDefaults;
 import com.arnowouter.javaodoo.exceptions.ConnectorException;
 import com.arnowouter.javaodoo.exceptions.ExceptionMessages;
 import com.arnowouter.javaodoo.util.DatabaseParams;
 import com.arnowouter.javaodoo.util.VersionInfo;
 import de.timroes.axmlrpc.XMLRPCException;
+
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import static java.util.Arrays.asList;
@@ -18,7 +22,8 @@ import static java.util.Collections.singletonList;
 import java.util.*;
 
 import com.arnowouter.javaodoo.util.Query;
-import com.arnowouter.javaodoo.IOdooConnector;
+import org.jetbrains.annotations.NotNull;
+
 /**
  *
  * @author  Arno Soontjens
@@ -26,7 +31,7 @@ import com.arnowouter.javaodoo.IOdooConnector;
  */
 
 
-public class OdooConnector implements IOdooConnector {
+public class OdooConnector {
     
     private Client odooClient;
     
@@ -103,8 +108,7 @@ public class OdooConnector implements IOdooConnector {
         createClient(ignoreInvalidSSL);
     }
     
-    @Override
-    public Map<String,String> setupTestDataBase(URL url) {
+public Map<String,String> setupTestDataBase(URL url) {
         Map<String, String> info = null;
         try {
             Client client = new Client(url);
@@ -115,8 +119,7 @@ public class OdooConnector implements IOdooConnector {
         return info;
     }
             
-    @Override
-    public int authenticate() throws ConnectorException {
+public int authenticate() throws ConnectorException {
         try {
             odooUserId = odooClient.authenticate(dbParams);
             return odooUserId;
@@ -125,8 +128,7 @@ public class OdooConnector implements IOdooConnector {
         }
     }
     
-    @Override
-    public VersionInfo getVersion() throws ConnectorException {
+public VersionInfo getVersion() throws ConnectorException {
         try {
             return odooClient.getVersion();
         } catch (XMLRPCException ex) {
@@ -134,18 +136,12 @@ public class OdooConnector implements IOdooConnector {
         }
     }
     
-    @Override
-    public Object[] getAllFieldsForModel(String model) throws ConnectorException {
+public Object[] getAllFieldsForModel(String model) throws ConnectorException {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
     
     
-    @Override
-    public Object geoLocalize(int id) throws ConnectorException {
-       /* Object[] idsToUpdate = new Object[ids.length];
-        for(int i=0;i<ids.length;i++) {
-            idsToUpdate[i] = ids[i];
-        }*/
+public Object geoLocalize(int id) throws ConnectorException {
         
         try {
             Object[] params = {
@@ -165,25 +161,21 @@ public class OdooConnector implements IOdooConnector {
     }
 
 
-    @Override
-    public Integer[] createRecords(String model, List<HashMap<String, Object>> listOfNewRecordValues) throws ConnectorException {
+public Integer[] createRecords(String model, List<HashMap<String, Object>> listOfNewRecordValues) throws ConnectorException {
         Object[] recordIds = (Object[]) this.executeModelMethod("account.move", "create", listOfNewRecordValues.toArray());
         Integer[] recordIdsList = Arrays.asList(recordIds).toArray(new Integer[0]);
         return recordIdsList;
     }
 
-    @Override
-    public Integer[] createRecord(String model, HashMap<String, Object> newRecordValues) throws ConnectorException {
+public Integer[] createRecord(String model, HashMap<String, Object> newRecordValues) throws ConnectorException {
         return this.createRecords(model, new ArrayList<>(singletonList(newRecordValues)));
     }
     
-    @Override
-    public Object[] read(String model, int[] requestedIds) throws ConnectorException {
+public Object[] read(String model, int[] requestedIds) throws ConnectorException {
         return read(model, requestedIds, new Object[0]);
     }
     
-    @Override
-    public Object[] read(String model, int[] requestedIds, Object[] requestedFields) throws ConnectorException {
+public Object[] read(String model, int[] requestedIds, Object[] requestedFields) throws ConnectorException {
         if(!isAuthenticated()) throw new ConnectorException(ExceptionMessages.EX_MSG_NOT_AUTHENTENTICATED);
         Object[] idsToRead = new Object[requestedIds.length];
         for(int i=0;i<requestedIds.length;i++) {
@@ -209,24 +201,20 @@ public class OdooConnector implements IOdooConnector {
         }
     }
     
-    @Override
-    public int count(String model, Query query) throws ConnectorException {
+public int count(String model, Query query) throws ConnectorException {
         return count(model, query.getQueryObject());
     }
     
-    @Override
-    public int count(String model, Object[] query) throws ConnectorException {
+public int count(String model, Object[] query) throws ConnectorException {
         //TODO: implement this
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
     
-    @Override
-    public int[] search(String model, Query query) throws ConnectorException {
+public int[] search(String model, Query query) throws ConnectorException {
         return search(model, query.getQueryObject());
     }
 
-    @Override
-    public int[] search(String model, Object[] query) throws ConnectorException {
+public int[] search(String model, Object[] query) throws ConnectorException {
         try {
             Object[] params = {
                 dbParams.getDatabaseName(),
@@ -243,18 +231,15 @@ public class OdooConnector implements IOdooConnector {
         }
     }
 
-    @Override
-    public Object[] searchAndRead(String model, Object[] requestedFields) throws ConnectorException {
+public Object[] searchAndRead(String model, Object[] requestedFields) throws ConnectorException {
         return searchAndRead(model, new Object[0],requestedFields);
     }
     
-    @Override
-    public Object[] searchAndRead(String model, Query query, Object[] requestedFields) throws ConnectorException {
+public Object[] searchAndRead(String model, Query query, Object[] requestedFields) throws ConnectorException {
         return searchAndRead(model, query.getQueryObject(), requestedFields);
     }
     
-    @Override
-    public Object[] searchAndRead(String model, Object[] query, Object[] requestedFields) throws ConnectorException {
+public Object[] searchAndRead(String model, Object[] query, Object[] requestedFields) throws ConnectorException {
 
         Map<String, Object> requestedFieldMap = new HashMap<>();
         requestedFieldMap.put(ConnectorDefaults.ODOO_FIELDS, asList(requestedFields));
@@ -277,14 +262,12 @@ public class OdooConnector implements IOdooConnector {
 //        }
     }
 
-    @Override
-    public boolean updateRecords(String model, Integer[] recordIds, HashMap<String, Object> dataToUpdate) throws ConnectorException {
+public boolean updateRecords(String model, Integer[] recordIds, HashMap<String, Object> dataToUpdate) throws ConnectorException {
         List<HashMap<String, Object>> dataToUpdateAsList = new ArrayList<>(singletonList(dataToUpdate));
         return (boolean) this.executeMethod(model, ConnectorDefaults.ACTION_UPDATE_RECORD, recordIds, dataToUpdateAsList.toArray());
     }
 
-    @Override
-    public boolean deleteRecords(String model, Integer[] idsToBeDeleted) throws ConnectorException {
+public boolean deleteRecords(String model, Integer[] idsToBeDeleted) throws ConnectorException {
         return (boolean) this.executeMethod(model, ConnectorDefaults.ACTION_DELETE_RECORD, idsToBeDeleted);
     }
     
@@ -303,11 +286,9 @@ public class OdooConnector implements IOdooConnector {
     public void setProtocol(String protocol) {this.protocol = protocol;}
     public void setHostName(String hostName) {this.hostName = hostName;}
     public void setConnectionPort(int connectionPort) {this.connectionPort = connectionPort;}
-    @Override
-    public void setDbParams(DatabaseParams dbParams) {this.dbParams = dbParams;}
+public void setDbParams(DatabaseParams dbParams) {this.dbParams = dbParams;}
 
-    @Override
-    public Object executeModelMethod(String model, String method, Object[] arguments, Map<String, Object> keywordArguments) throws ConnectorException {
+public Object executeModelMethod(String model, String method, Object[] arguments, Map<String, Object> keywordArguments) throws ConnectorException {
 
         if (model == null) {throw new NullPointerException("Model cannot be null");}
         if (method == null) {throw new NullPointerException("Method cannot be null");}
@@ -333,18 +314,15 @@ public class OdooConnector implements IOdooConnector {
         }
     }
 
-    @Override
-    public Object executeModelMethod(String model, String method, Object[] arguments) throws ConnectorException {
+public Object executeModelMethod(String model, String method, Object[] arguments) throws ConnectorException {
         return this.executeModelMethod(model, method, arguments, null);
     }
 
-    @Override
-    public Object executeModelMethod(String model, String method) throws ConnectorException {
+public Object executeModelMethod(String model, String method) throws ConnectorException {
         return this.executeModelMethod(model, method, new Object[0]);
     }
 
-    @Override
-    public Object executeMethod(String model, String method, Integer[] recordIds, Object[] arguments, Map<String, Object> keywordArguments) throws ConnectorException {
+public Object executeMethod(String model, String method, Integer[] recordIds, Object[] arguments, Map<String, Object> keywordArguments) throws ConnectorException {
 
         if (model == null) {throw new NullPointerException("Model cannot be null");}
         if (method == null) {throw new NullPointerException("Method cannot be null");}
@@ -383,13 +361,11 @@ public class OdooConnector implements IOdooConnector {
         }
     }
 
-    @Override
-    public Object executeMethod(String model, String method, Integer[] recordIds, Object[] arguments) throws ConnectorException {
+public Object executeMethod(String model, String method, Integer[] recordIds, Object[] arguments) throws ConnectorException {
         return this.executeMethod(model, method, recordIds, arguments, null);
     }
 
-    @Override
-    public Object executeMethod(String model, String method, Integer[] recordIds) throws ConnectorException {
+public Object executeMethod(String model, String method, Integer[] recordIds) throws ConnectorException {
         return this.executeMethod(model, method, recordIds, new Object[0], null);
     }
 

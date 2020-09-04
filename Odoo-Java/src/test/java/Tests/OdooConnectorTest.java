@@ -5,7 +5,7 @@
  */
 package Tests;
 
-import com.arnowouter.javaodoo.client.OdooConnector;
+import com.arnowouter.javaodoo.OdooConnector;
 import com.arnowouter.javaodoo.exceptions.ConnectorException;
 import com.arnowouter.javaodoo.util.DatabaseParams;
 import com.arnowouter.javaodoo.util.VersionInfo;
@@ -24,15 +24,14 @@ import com.arnowouter.javaodoo.exceptions.QueryException;
 import com.arnowouter.javaodoo.util.Query;
 import com.arnowouter.javaodoo.util.QueryBuilder;
 import static java.util.Arrays.asList;
-import com.arnowouter.javaodoo.IOdooConnector;
 
 /**
  *
  * @author Arno
  */
 public class OdooConnectorTest {
-    static IOdooConnector testDBConnector;
-    static IOdooConnector odooConnector;
+    static OdooConnector testDBConnector;
+    static OdooConnector odooConnector;
     static DatabaseParams dbParams;
     static int userID;
     static String odooHostName, databaseLogin, databaseName, databasePassword;
@@ -129,9 +128,9 @@ public class OdooConnectorTest {
     
     @Test
     public void shouldRead() throws ConnectorException {
-        int[] ids = {2,3,4,6,7,19,20,22,39,40,41,42};
+        int[] ids = {33, 27};
 
-        Object[] result = odooConnector.read("sale.order",ids);
+        Object[] result = odooConnector.read("res.partner",ids);
         for(Object res : result){
             System.out.println("Result: " + res.toString());
         }
