@@ -6,34 +6,34 @@ This library uses XML-RPC to connect to the Odoo ERP system, using Java. This li
 Depends on the <a href="https://github.com/gturri/aXMLRPC">aXMLRPC</a> library by Tim Roes. 
 
 ## Usage
-Create a new instance of the OdooConnector (using the interface) and provide a URL.
+Create a new instance of the OdooConnector and provide a URL.
 ```javascript   
-IOdooConnector odooConnector = new OdooConnector("URL_to_connect_to");
+OdooConnector odooConnector = new OdooConnector("URL_to_connect_to");
 ```
 This will create a new odooConnector object to connect to the given hostname. 
 
 There also is a possibility to provide a protocol, hostname and port separately to form the URL:
 ```javascript   
-IOdooConnector odooConnector = new OdooConnector("HTTP", "www.somehostname.com", 8080);
+OdooConnector odooConnector = new OdooConnector("HTTP", "www.somehostname.com", 8080);
 ```
 To connect to the Odoo database, you will need to provide a login, password and databasename. These parameters can be added by making use of the ```dbParams``` object and used as a parameter when calling the constructor:
 ```javascript
 dbParams databaseParams = new dbParams("dbName", "dbLogin", "dbPassword");
-IOdooConnector odooConnector = new OdooConnector("URL_to_connect_to", databaseParams);
+OdooConnector odooConnector = new OdooConnector("URL_to_connect_to", databaseParams);
 ```
 Or can be added later:
 ```javascript
-IOdooConnector odooConnector = new OdooConnector("URL_to_connect_to");
+OdooConnector odooConnector = new OdooConnector("URL_to_connect_to");
 dbParams databaseParams = new dbParams("dbName", "dbLogin", "dbPassword");
 odooConnector.setDbParams(databaseParams);
 ```
 Or, alternatively, all parameters can be passed separately to the constructor:
 ```javascript   
-IOdooConnector odooConnector = new OdooConnector("protocol", "hostName", "connectionPort","dbName", "dbLogin", "dbPassword"); 
+OdooConnector odooConnector = new OdooConnector("protocol", "hostName", "connectionPort","dbName", "dbLogin", "dbPassword"); 
 ```
 If this connection uses SSL, a check for valid certificate and hostname will be run when calling methods on the odooConnector. If you are not using a valid or are using a self-signed certificate, use ```false``` as a second parameter to the constructor to skip that check, like this (and can be done in the same way for all constructors):
 ```javascript   
-IOdooConnector odooConnector = new OdooConnector("URL_to_connect_to", false);
+OdooConnector odooConnector = new OdooConnector("URL_to_connect_to", false);
 ```
 ### getVersion
 Get information about the Odoo server you are connecting to. Getting version information means the connection to the server is ok.
